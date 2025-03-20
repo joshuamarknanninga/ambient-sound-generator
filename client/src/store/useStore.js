@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const useStore = create(persist(
+export const useStore = create(persist(
   (set, get) => ({
     presets: {},
     effects: {

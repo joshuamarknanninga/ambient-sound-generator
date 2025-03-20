@@ -23,10 +23,13 @@ export default defineConfig({
             type: 'image/png'
           }
         ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,png,mp3,wav}']
       }
     })
-  ]
+  ],
+  resolve: {
+    alias: {
+      '@': '/src',
+      '@components': '/src/components'
+    }
+  }
 })

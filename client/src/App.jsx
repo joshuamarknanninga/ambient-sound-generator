@@ -1,37 +1,89 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import * as Tone from 'tone';
+import { useStore } from './store/useStore';
 import StepSequencer from './components/StepSequencer';
-import SynthPad from './components/SynthPad';
+import SoundPad from './components/SoundPad';
+import EffectsPanel from './components/EffectsPanel';
+import PresetManager from './components/PresetManager';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 function App() {
-  const [synth] = useState(new Tone.PolySynth().toDestination());
+  const [synth, setSynth] = useState(null);
   const [isAudioStarted, setIsAudioStarted] = useState(false);
+  const { effects } = useStore();
 
-  const startAudio = async () => {
-    await Tone.start();
-    Tone.Transport.start();
-    setIsAudioStarted(true);
-  };
+  // Initialize audio engine
+  useEffect(() => {
+    let reverb, delay, distortion;
+    
+    const initSynth = async () => {
+      await Tone.start();
+      
+      // Create effects
+      reverb = new Tone.Reverb(effects.reverb).toDestination();
+      delay = new Tone.FeedbackDelay(effects.delay, 0.6).toDestination();
+      distortion = new Tone.Distortion(effects.distortion).toDestination();
+      
+      // Initialize synth with effects chain
+      const newSynth = new Tone.PolySynth().chain(
+        distortion,
+        delay,
+        reverb
+      );
+      
+      setSynth(newSynth);
+      Tone.Transport.start();
+    };
+
+    if (isAudioStarted) {
+      initSynth();
+    }
+
+    // Cleanup function
+    return () => {
+      if (synth) {
+        synth.dispose();
+      }
+      [reverb, delay, distortion].forEach(effect => {
+        if (effect) effect.dispose();
+      });
+    };
+  }, [isAudioStarted]); // Removed effects from dependencies
 
   return (
-    <Container fluid>
-      {!isAudioStarted && (
-        <button onClick={startAudio} className="start-btn">
-          Start Audio Engine
-        </button>
-      )}
-      
-      <Row>
-        <Col md={8}>
-          <StepSequencer synth={synth} />
-        </Col>
-        <Col md={4}>
-          <SynthPad synth={synth} />
-        </Col>
-      </Row>
-    </Container>
+    <ErrorBoundary>
+      <Container fluid className="main-container">
+        {!isAudioStarted ? (
+          <div className="start-screen">
+            <h1>Ambient Sound Generator</h1>
+            <button 
+              className="start-button" 
+              onClick={() => setIsAudioStarted(true)}
+            >
+              Initialize Audio Engine
+            </button>
+          </div>
+        ) : (
+          <Row>
+            <Col md={8}>
+              {synth && (
+                <>
+                  <StepSequencer synth={synth} />
+                  <SoundPad synth={synth} />
+                </>
+              )}
+            </Col>
+            
+            <Col md={4}>
+              <EffectsPanel />
+              <PresetManager />
+            </Col>
+          </Row>
+        )}
+      </Container>
+    </ErrorBoundary>
   );
 }
 

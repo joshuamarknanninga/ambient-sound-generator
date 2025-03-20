@@ -1,8 +1,9 @@
+import * as Tone from 'tone';
 import { useState, useEffect } from 'react';
 import { Button, Row, Col } from 'react-bootstrap';
 
 const StepSequencer = ({ synth }) => {
-  const [steps] = useState(Array(16).fill(false));
+  const [steps, setSteps] = useState(Array(16).fill(false));
   const [currentStep, setCurrentStep] = useState(0);
   const [sequence] = useState(['C3', 'E3', 'G3', 'B3']);
 
@@ -18,7 +19,11 @@ const StepSequencer = ({ synth }) => {
   }, [steps, currentStep, synth, sequence]);
 
   const toggleStep = (index) => {
-    steps[index] = !steps[index];
+    setSteps(prev => {
+      const newSteps = [...prev];
+      newSteps[index] = !newSteps[index];
+      return newSteps;
+    });
   };
 
   return (
